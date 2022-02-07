@@ -1,0 +1,17 @@
+## Interface: 90105
+## Version: 1.0.0
+
+## Name: Ravenous
+## Title: Ravenous
+## Notes: Personal collections and utilities!|n|cffbbbbbbSlash command: /rav|r
+## Author: waldenp0nd
+
+## RequiredDeps: SilverDragon
+
+## SavedVariables: RAVENOUS_version
+## SavedVariablesPerCharacter: RAVENOUS_data
+
+## X-License: Public Domain
+## X-Website: https://github.com/waldenp0nd/rav
+
+rav.xml
