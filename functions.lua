@@ -12,6 +12,7 @@ local large = 16
 local gigantic = 24
 
 local _, class = UnitClass("player")
+local covenant = C_Covenants.GetActiveCovenantID()
 local faction, _ = UnitFactionGroup("player")
 local factionCity = (faction == "Alliance" and "Stormwind" or "Orgrimmar")
 
@@ -66,6 +67,7 @@ local icons = {
     ["Achievement"] = TextIcon(235415, 20),
     ["Checkmark"] = TextIcon(628564),
     ["Skull"] = TextIcon(137025),
+    ["Vendor"] = TextIcon(130767),
 }
 
 local function IsLead()
@@ -152,16 +154,14 @@ local function GetZoneID(rare)
 end
 
 local function GetZoneData(tab, rare)
-    local data
     for zoneID, _ in pairs(rare.locations) do
         for _, zone in ipairs(tab.zones) do
             if zoneID == zone.id then
-                data = tab.zones[zoneID]
-                break
+                return zone
             end
         end
     end
-    return data
+    return nil
 end
 
 local function GetCoordinates(rare)
@@ -267,7 +267,7 @@ function ns:RefreshRares()
             without = string.gsub(without, icon, "")
         end
         Rare.rare.quest = Rare.rare.quest or (faction == "Alliance" and (Rare.rare.questAlliance or nil) or (Rare.rare.questHorde or nil))
-        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly or Rare.rare.encounter) and icons.Daily or Rare.rare.achievement and icons.Achievement or icons.Skull) .. without)
+        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly or Rare.rare.encounter) and icons.Daily or Rare.rare.achievement and icons.Achievement or Rare.rare.vendor and icons.Vendor or icons.Skull) .. without)
     end
 end
 
@@ -332,10 +332,11 @@ function ns:CacheAndBuild(callback)
                     item = type(item) == "table" and item or {item}
                     if GetItemInfo(GetItemID(item)) == nil then
                     elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
-                    elseif RAVENOUS_data.options.showMounts == false and item.mount == nil then
-                    elseif RAVENOUS_data.options.showPets == false and item.pet == nil then
-                    elseif RAVENOUS_data.options.showToys == false and item.pet == nil then
+                    elseif RAVENOUS_data.options.showMounts == false and item.mount then
+                    elseif RAVENOUS_data.options.showPets == false and item.pet then
+                    elseif RAVENOUS_data.options.showToys == false and item.toy then
                     elseif RAVENOUS_data.options.showCosmetics == false and item.mount == nil and item.pet == nil and item.toy == nil then
+                    elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
                     elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
                     elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
                     else
@@ -582,7 +583,7 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
         end
     end
 
-    -- For each Rare in the Zone
+    -- For each Rare in the Tab
     local i = 0
     for rareID, rare in pairs(tab.rares) do
         if GetZoneID(rare) == zone.id then
@@ -606,15 +607,16 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
             else
                 local items = {}
                 if rare.loot and #rare.loot > 0 then
-                    -- For each Item dropped by the Rare in the Zone
+                    -- For each Item dropped by the Rare
                     for _, item in ipairs(rare.loot) do
                         item = type(item) == "table" and item or {item}
                         if GetItemInfo(GetItemID(item)) == nil then
                         elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
-                        elseif RAVENOUS_data.options.showMounts == false and item.mount == nil then
-                        elseif RAVENOUS_data.options.showPets == false and item.pet == nil then
-                        elseif RAVENOUS_data.options.showToys == false and item.pet == nil then
+                        elseif RAVENOUS_data.options.showMounts == false and item.mount then
+                        elseif RAVENOUS_data.options.showPets == false and item.pet then
+                        elseif RAVENOUS_data.options.showToys == false and item.toy then
                         elseif RAVENOUS_data.options.showCosmetics == false and item.mount == nil and item.pet == nil and item.toy == nil then
+                        elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
                         elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
                         elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
                         else
@@ -624,6 +626,7 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
                     end
                 end
                 if #items == 0 then
+                elseif GetCoordinates(rare) == nil then
                 elseif RAVENOUS_data.options.showCannotUse == false and rare.faction and rare.faction:upper() ~= faction:upper() then
                 else
                     -- Rare
@@ -649,12 +652,12 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     local zoneName = C_Map.GetMapInfo(zone.id).name
     local c = GetCoordinates(rare)
 
-    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly or rare.encounter) and icons.Daily or rare.achievement and icons.Achievement or icons.Skull
+    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly or rare.encounter) and icons.Daily or rare.achievement and icons.Achievement or rare.vendor and icons.Vendor or icons.Skull
     local rareFaction = rare.faction and "|cff" .. (rare.faction == "Alliance" and "0078ff" or "b30000") .. rare.faction .. "|r" or nil
     local factionOnly = rareFaction and TextColor(L.OnlyFor) .. rareFaction or ""
     local rareControl = rare.control and "|cff" .. (rare.control == "Alliance" and "0078ff" or "b30000") .. rare.control .. "|r" or nil
     local controlRequired = rareControl and TextColor(string.format(L.ZoneControl, rareControl)) or ""
-    local drops = #items > 0 and  " " .. TextColor(L.Drops, "bbbbbb") or ""
+    local drops = #items > 0 and  " " .. TextColor(rare.vendor and L.Sells or L.Drops, "bbbbbb") or ""
 
     local Rare = CreateFrame("Button", ADDON_NAME .. "Rare" .. rareID, Parent)
     local RareLabel = Rare:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -724,6 +727,8 @@ function ns:CreateItem(Parent, Relative, zone, rare, item)
     local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(GetItemID(item))
     local chance = item.chance and TextColor(" " .. item.chance .. "%", "bbbbbb") .. (item.chance < 100 and TextColor(" (~" .. RunsUntilDrop(item.chance) .. " runs exp.)", "bbbbbb") or "") or ""
     local achievement = item.achievement and TextColor(L.From) .. GetAchievementLink(item.achievement) or ""
+    local itemCovenant = item.covenant and ns.data.covenants[item.covenant] or nil
+    local covenantOnly = itemCovenant and TextColor(L.OnlyFor) .. TextColor(itemCovenant.name, itemCovenant.color) or ""
     local itemFaction = item.faction and "|cff" .. (item.faction == "Alliance" and "0078ff" or "b30000") .. item.faction .. "|r" or nil
     local factionOnly = itemFaction and TextColor(L.OnlyFor) .. itemFaction or ""
     local itemClass = item.class and "|c" .. select(4, GetClassColor(string.gsub(item.class, "%s+", ""):upper())) .. item.class .. "s|r" or nil
@@ -733,7 +738,7 @@ function ns:CreateItem(Parent, Relative, zone, rare, item)
     local Item = CreateFrame("Button", ADDON_NAME .. "Item" .. GetItemID(item), Parent)
     local ItemLabel = Item:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     ItemLabel:SetJustifyH("LEFT")
-    ItemLabel:SetText("    " .. TextIcon(itemTexture) .. "  " .. itemLink .. chance .. achievement .. factionOnly .. classOnly .. owned)
+    ItemLabel:SetText("    " .. TextIcon(itemTexture) .. "  " .. itemLink .. chance .. achievement .. covenantOnly .. factionOnly .. classOnly .. owned)
     ItemLabel:SetPoint("TOPLEFT", Relative, "BOTTOMLEFT", 0, -small)
     ItemLabel:SetWidth(Parent:GetWidth())
     Item:SetAllPoints(ItemLabel)

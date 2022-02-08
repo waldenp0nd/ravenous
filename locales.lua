@@ -61,6 +61,7 @@ L.Support2 = "Check out the Addon on |rGitHub|cffffffff, |rWoWInterface|cfffffff
 L.Faction = "%1$s with %2$s" -- Reputation Level, Faction Name
 L.Reputation = "+%1$s Reputation with %2$s" -- Reputation Value, Faction Name
 L.Drops = "drops:"
+L.Sells = "sells:"
 L.OnlyFor = " only for "
 L.SummonedBy = ", summoned by "
 L.ZoneControl = " (%1$s-controlled Zone)" -- Faction Name

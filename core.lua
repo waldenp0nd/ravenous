@@ -31,26 +31,37 @@ function ravenous_OnEvent(self, event, arg, ...)
             end
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
+        -- Prepare AddOn data, window, options
         ns:SetDefaultOptions()
         ns:BuildOptions()
         InterfaceOptions_AddCategory(ns.Options)
         ns:EnsureMacro()
-        ns:CacheAndBuild(function()
-            -- These happen once all Items have been cached
-            if RAVENOUS_data.options.allowSharing then
-                C_ChatInfo.RegisterAddonMessagePrefix(ADDON_NAME)
-            else
-                self:UnregisterEvent("CHAT_MSG_ADDON")
+        C_Timer.After(5, function()
+            -- Loop through SilverDragon data
+            for _, expansion in ipairs(ns.data.expansions) do
+                for k, v in pairs(SilverDragon.datasources[expansion]) do
+                    ns.data.tabs[1].rares[k] = v
+                end
             end
-            ns:BuildWindow()
-            if ns.waitingForWindow or not RAVENOUS_version then
-                ns:ToggleWindow(ns.Window, "Show")
-            end
-            if ns.waitingForOptions then
-                InterfaceOptionsFrame_OpenToCategory(ns.Options)
-                InterfaceOptionsFrame_OpenToCategory(ns.Options)
-            end
+            -- Cache data, set up window and options
+            ns:CacheAndBuild(function()
+                -- These happen once all Items have been cached
+                if RAVENOUS_data.options.allowSharing then
+                    C_ChatInfo.RegisterAddonMessagePrefix(ADDON_NAME)
+                else
+                    self:UnregisterEvent("CHAT_MSG_ADDON")
+                end
+                ns:BuildWindow()
+                if ns.waitingForWindow or not RAVENOUS_version then
+                    ns:ToggleWindow(ns.Window, "Show")
+                end
+                if ns.waitingForOptions then
+                    InterfaceOptionsFrame_OpenToCategory(ns.Options)
+                    InterfaceOptionsFrame_OpenToCategory(ns.Options)
+                end
+            end)
         end)
+        -- Version check
         if not RAVENOUS_version then
             ns:PrettyPrint(string.format(L.Install, ns.color, ns.version, ns.command))
         elseif RAVENOUS_version ~= ns.version then

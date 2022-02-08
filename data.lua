@@ -1,18 +1,5 @@
 local ADDON_NAME, ns = ...
 
-local function TableConcat(t1, t2)
-    for i=1, #t2 do
-        t1[#t1+1] = t2[i]
-    end
-    return t1
-end
-
-local SilverDragonData = {}
--- SilverDragonData = TableConcat(SilverDragonData, SilverDragon.datasources["Vanilla"])
--- SilverDragonData = TableConcat(SilverDragonData, SilverDragon.datasources["BurningCrusade"])
-SilverDragonData = TableConcat(SilverDragonData, SilverDragon.datasources["Wrath"])
-SilverDragonData = TableConcat(SilverDragonData, SilverDragon.datasources["Shadowlands"])
-
 ns.defaults = {
     locked = false,
     macro = true,
@@ -33,71 +20,181 @@ ns.defaults = {
 
 ns.data = {
     notes = {
-        "General notes",
+        "TODO",
+        "- Figure out how to ensure SilverDragon data is ready when I attempt to cache it—C_Timer is the interim solution. It being a dependency in TOC seems to have no bearing on its loading precedence.",
+        "- How to get NPC Name from NPC ID\n  - https://authors.curseforge.com/forums/world-of-warcraft/general-chat/lua-code-discussion/226100-how-to-get-the-unitname-with-only-the-npc-id"
+    },
+    expansions = {
+        "Shadowlands",
+        "BattleForAzeroth",
+        "Legion",
+        "Warlords",
+        "Mists",
+        "Cataclysm",
+        "Wrath",
+        "BurningCrusade",
+        "Vanilla",
     },
     tabs = {
         {
             name = "World Rares",
             icon = 236702,
             zones = {
+                -- {
+                --     -- Zereth Mortis
+                --     id = 1961,
+                --     color = "e5cc80",
+                --     icon = 3052062,
+                --     faction = 2478,
+                -- },
                 {
                     -- Korthia
                     id = 1961,
                     color = "e5cc80",
                     icon = 3052062,
+                    faction = {2470, 2472},
                     currency = 1931,
-                    faction = {2470, 2472}
                 },
                 {
                     -- The Maw
                     id = 1543,
                     color = "e5cc80",
                     icon = 3743739,
+                    faction = 2432,
                     currency = 1767,
-                    faction = 2432
                 },
                 {
                     -- Maldraxxus
                     id = 1536,
                     color = "40bf40",
-                    faction = 2410
+                    icon = 3257749,
+                    faction = 2410,
                 },
                 {
                     -- Revendreth
                     id = 1525,
                     color = "ff4040",
+                    icon = 3257751,
                     faction = {2413, 2439},
-                    currency = 1820
+                    currency = 1820,
                 },
                 {
                     -- Bastion
                     id = 1533,
                     color = "68ccef",
-                    faction = 2407
+                    icon = 3257748,
+                    faction = 2407,
                 },
                 {
                     -- Ardenweald
                     id = 1565,
                     color = "8b55d7",
-                    faction = {2465, 2464}
+                    icon = 3257750,
+                    faction = {2465, 2464},
+                },
+
+                {
+                    -- Mechagon
+                    id = 1462,
+                    color = "dbd9a9",
+                    icon = 2735924
+                },
+                {
+                    -- Nazjatar
+                    id = 1355,
+                    color = "4db3ea",
+                    icon = 3012068,
+                    currency = 1721
+                },
+                {
+                    -- Arathi Highlands
+                    id = 14,
+                    color = "f8f1bd",
+                    icon = 236712
+                },
+                {
+                    -- Darkshore
+                    id = 62,
+                    color = "f8f1bd",
+                    icon = 236739
+                },
+                {
+                    -- Uldum
+                    id = 1527,
+                    color = "f8f1bd",
+                    icon = 409550
+                },
+                {
+                    -- Vol'dun
+                    id = 1195,
+                    color = "d28b68",
+                    icon = 2125384
+                },
+                {
+                    -- Vale of Eternal Blossoms
+                    id = 1530,
+                    color = "b8dab6",
+                    icon = 618798
+                },
+                {
+                    -- Borean Tundra
+                    id = 114,
+                    color = "b4d455",
+                    icon = 236724
+                },
+                {
+                    -- Howling Fjord
+                    id = 117,
+                    color = "b4d455",
+                    icon = 236782
+                },
+                {
+                    -- Dragonblight
+                    id = 115,
+                    color = "b4d455",
+                    icon = 236744
+                },
+                {
+                    -- Grizzly Hills
+                    id = 116,
+                    color = "b4d455",
+                    icon = 236762
+                },
+                {
+                    -- Zul'Drak
+                    id = 121,
+                    color = "b4d455",
+                    icon = 236856
+                },
+                {
+                    -- Storm Peaks
+                    id = 120,
+                    color = "9ffcfa",
+                    icon = 236834
                 },
                 {
                     -- Icecrown
                     id = 118,
                     color = "c7fdfe",
-                    icon = 236794,
+                    icon = 236794
                 },
             },
-            rares = SilverDragonData,
+            rares = {},
         },
         {
             name = "Dungeon Bosses",
             icon = 341221,
             zones = {
                 {
+                    -- Eastern Plaguelands, Stratholme
+                    name = "Stratholme",
+                    id = 22,
+                    icon = 134554,
+                },
+                {
                     -- Deadwind Pass → Karazhan
-                    id = 42,
                     name = "Karazhan",
+                    id = 42,
                     color = "96a3aa",
                     icon = 1530372,
                 },
@@ -107,6 +204,20 @@ ns.data = {
                     id = 109,
                     color = "e96944",
                     icon = 250117,
+                },
+                {
+                    -- Storm Peaks → Ulduar
+                    name = "Ulduar",
+                    id = 120,
+                    color = "9ffcfa",
+                    icon = 254113,
+                },
+                {
+                    -- Icecrown → Icecrown Citadel
+                    name = "Icecrown Citadel",
+                    id = 118,
+                    color = "c7fdfe",
+                    icon = 236793,
                 },
                 {
                     -- Northern Stranglethorn → Zul'Gurub
@@ -136,20 +247,6 @@ ns.data = {
                     color = "f9d8fc",
                     icon = 574788,
                 },
-                {
-                    -- Storm Peaks → Ulduar
-                    name = "Ulduar",
-                    id = 120,
-                    color = "9ffcfa",
-                    icon = 254113,
-                },
-                {
-                    -- Icecrown → Icecrown Citadel
-                    name = "Icecrown Citadel",
-                    id = 118,
-                    color = "c7fdfe",
-                    icon = 236793,
-                },
             },
             rares = {
                 [16152] = {name="Attumen the Huntsman",locations={[42]={47007700}},loot={{30480,mount=168,chance=1},},encounter=2},
@@ -164,27 +261,64 @@ ns.data = {
                 [56173] = {name="Deathwing",locations={[75]={65005000}},loot={{77067,mount=442},{77069,mount=444}},encounter=8},
                 [33288] = {name="Yogg-Saron",locations={[120]={41001600}},loot={{45693,mount=304,chance=1}},notes={"Must be done on Hard Mode (Alone in the Dark)."},encounter=13},
                 [36597] = {name="The Lich King",locations={[118]={54008500}},loot={{50818,mount=363,chance=1}},encounter=12},
+                [45412] = {name="Lord Aurius Rivendare",locations={[22]={43501930}},loot={{13335,mount=69}}},
+
+                -- 87777
+                -- 93666
+                -- 95059
+                -- 104253
+                -- 116660
+                -- 123890
+                -- 45412
             },
+        },
+        {
+            name = "Other",
+            icon = 133014,
+            zones = {
+                {
+                    -- Darkmoon Island
+                    id = 407,
+                    color = "bc94db",
+                    icon = 1100023,
+                    currency = 515,
+                }
+            },
+            rares = {
+                [85484] = {name="Chester",locations={[407]={51507500}},loot={{116139,toy=true},116138,122238,116052,116137,116133,116136,116134},vendor=true},
+                [14846] = {name="Lhara",locations={[407]={48206950}},loot={{73903,pet=338},{73905,pet=339},{74981,pet=343},{91003,pet=1061},{73764,pet=330},{73765,pet=335}},vendor=true},
+                [55305] = {name="Carl Goodup",locations={[407]={49308040}},loot={{73762,pet=336},{164970,pet=2482},{164971,pet=2483},{164969,pet=2484}},vendor=true},
+            }
         },
     },
     currencies = {
         {
-            id = 1721, -- Prismatic Manapearl
+            -- Darkmoon Prize Ticket
+            id = 515,
+            color = "ed6966",
+            icon = 134481,
+        },
+        {
+            -- Prismatic Manapearl
+            id = 1721,
             color = "4db3ea",
             icon = 463858,
         },
         {
-            id = 1767, -- Stygia
+            -- Stygia
+            id = 1767,
             color = "e5cc80",
             icon = 3743739,
         },
         {
-            id = 1820, -- Infused Ruby
+            -- Infused Ruby
+            id = 1820,
             color = "f04c73",
             icon = 133250,
         },
         {
-            id = 1931, -- Cataloged Research
+            -- Cataloged Research
+            id = 1931,
             color = "dfd4ad",
             icon = 1506458,
         },
@@ -199,5 +333,31 @@ ns.data = {
         "00ffcc",
         "00ffff",
         "00ffff",
+    },
+    covenants = {
+        [1] = {
+            name = "Kyrian",
+            color = "68ccef",
+            icon = 3257748,
+            phrase = "Home of the %s",
+        },
+        [2] = {
+            name = "Venthyr",
+            color = "ff4040",
+            icon = 3257751,
+            phrase = "Court of the %s",
+        },
+        [3] = {
+            name = "Night Fae",
+            color = "8b55d7",
+            icon = 3257750,
+            phrase = "Forest of the %s",
+        },
+        [4] = {
+            name = "Necrolord",
+            color = "40bf40",
+            icon = 3257749,
+            phrase = "Citadel of the %s",
+        },
     },
 }

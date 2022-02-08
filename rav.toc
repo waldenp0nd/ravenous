@@ -6,7 +6,7 @@
 ## Notes: Personal collections and utilities!|n|cffbbbbbbSlash command: /rav|r
 ## Author: waldenp0nd
 
-## RequiredDeps: SilverDragon
+## RequiredDeps: SilverDragon, SilverDragon_Vanilla, SilverDragon_BurningCrusade, SilverDragon_Wrath, SilverDragon_Cataclysm, SilverDragon_Mists, SilverDragon_Warlords, SilverDragon_Legion, SilverDragon_BattleForAzeroth, SilverDragon_Shadowlands
 
 ## SavedVariables: RAVENOUS_version
 ## SavedVariablesPerCharacter: RAVENOUS_data
