@@ -155,6 +155,18 @@ ns.data = {
                     icon = 236744
                 },
                 {
+                    -- Crystalsong Forest
+                    id = 127,
+                    color = "b45455",
+                    icon = 236744
+                },
+                {
+                    -- Sholazar Basin
+                    id = 119,
+                    color = "b45455",
+                    icon = 236744
+                },
+                {
                     -- Grizzly Hills
                     id = 116,
                     color = "b4d455",
@@ -177,6 +189,12 @@ ns.data = {
                     id = 118,
                     color = "c7fdfe",
                     icon = 236794
+                },
+                {
+                    -- Darkmoon Island
+                    id = 407,
+                    color = "bc94db",
+                    icon = 1100023
                 },
             },
             rares = {},
@@ -282,7 +300,7 @@ ns.data = {
                     color = "bc94db",
                     icon = 1100023,
                     currency = 515,
-                }
+                },
             },
             rares = {
                 [85484] = {name="Chester",locations={[407]={51507500}},loot={{116139,toy=true},116138,122238,116052,116137,116133,116136,116134},vendor=true},
@@ -359,5 +377,24 @@ ns.data = {
             icon = 3257749,
             phrase = "Citadel of the %s",
         },
+    },
+    annoyingSounds = {
+        3635292, -- sound/creature/mawshade/mon_mawshade_aggro_00_161095.ogg
+        3635290, -- sound/creature/mawshade/mon_mawshade_aggro_01_161095.ogg
+        3635288, -- sound/creature/mawshade/mon_mawshade_aggro_02_161095.ogg
+        3635286, -- sound/creature/mawshade/mon_mawshade_aggro_03_161095.ogg
+        3635284, -- sound/creature/mawshade/mon_mawshade_aggro_04_161095.ogg
+        3635416, -- sound/creature/mawshade/mon_mawshade_alert_00_161094.ogg
+        3635414, -- sound/creature/mawshade/mon_mawshade_alert_01_161094.ogg
+        3635412, -- sound/creature/mawshade/mon_mawshade_alert_02_161094.ogg
+        3635330, -- sound/creature/mawshade/mon_mawshade_death_00_161100.ogg
+        3635328, -- sound/creature/mawshade/mon_mawshade_death_01_161100.ogg
+        3635326, -- sound/creature/mawshade/mon_mawshade_death_02_161100.ogg
+        3635324, -- sound/creature/mawshade/mon_mawshade_death_03_161100.ogg
+        3635322, -- sound/creature/mawshade/mon_mawshade_death_04_161100.ogg
+        3635320, -- sound/creature/mawshade/mon_mawshade_death_05_161100.ogg
+        3747229, -- sound/creature/mawsworn/mon_mawsworn_loop_01_171773.ogg
+        3747231, -- sound/creature/mawsworn/mon_mawsworn_loop_02_171773.ogg
+        3747239, -- sound/creature/mawsworn/mon_mawsworn_loop_03_171773.ogg
     },
 }

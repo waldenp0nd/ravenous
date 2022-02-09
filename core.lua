@@ -61,6 +61,10 @@ function ravenous_OnEvent(self, event, arg, ...)
                 end
             end)
         end)
+        -- Mute annoying sounds
+        for _, sound in pairs(ns.data.annoyingSounds) do
+            MuteSoundFile(sound)
+        end
         -- Version check
         if not RAVENOUS_version then
             ns:PrettyPrint(string.format(L.Install, ns.color, ns.version, ns.command))
