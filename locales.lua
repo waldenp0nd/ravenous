@@ -57,7 +57,7 @@ L.Defaults = {
     {
         var = "showItems",
         text = "Show Items",
-        tooltip = "When enabled, consumable/quest items will appear in lists.",
+        tooltip = "When enabled, consumable, container, recipes, and quest items will appear in lists.",
     },
     {
         var = "allowSharing",
