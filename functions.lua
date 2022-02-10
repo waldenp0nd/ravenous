@@ -86,6 +86,9 @@ end
 
 local function IsRareDead(rare)
     if type(rare.quest) == "table" then
+        if rare.quest[faction:lower()] then
+            return CQL.IsQuestFlaggedCompleted(rare.quest[faction:lower()])
+        end
         for _, quest in ipairs(rare.quest) do
             if not CQL.IsQuestFlaggedCompleted(quest) then
                 return false
@@ -96,8 +99,9 @@ local function IsRareDead(rare)
         return CQL.IsQuestFlaggedCompleted(rare.quest)
     elseif rare.encounter then
         for i = 1, GetNumSavedInstances(), 1 do
+            local name, id, reset, difficulty, locked, extended, instanceIDMostSig, isRaid, maxPlayers, difficultyName, numEncounters, encounterProgress, extendDisabled = GetSavedInstanceInfo(i)
             local bossName, fileDataID, isKilled, _ = GetSavedInstanceEncounterInfo(i, rare.encounter)
-            if bossName == rare.name then
+            if bossName == rare.name and locked == true then
                 return isKilled
             end
         end
@@ -144,26 +148,6 @@ local function GetCurrencyData(id)
     end
 end
 
-local function GetZoneID(rare)
-    local id
-    for zoneID, _ in pairs(rare.locations) do
-        id = zoneID
-        break
-    end
-    return id
-end
-
-local function GetZoneData(tab, rare)
-    for zoneID, _ in pairs(rare.locations) do
-        for _, zone in ipairs(tab.zones) do
-            if zoneID == zone.id then
-                return zone
-            end
-        end
-    end
-    return nil
-end
-
 local function GetCoordinates(rare)
     local waypoint
     for _, waypoints in pairs(rare.locations) do
@@ -178,6 +162,70 @@ local function GetCoordinates(rare)
         tinsert(coordinates, n)
     end
     return coordinates
+end
+
+local function GetZoneData(expansion, rare)
+    for zoneID, _ in pairs(rare.locations) do
+        for _, zone in ipairs(expansion.zones) do
+            if zoneID == zone.id then
+                return zone
+            end
+        end
+    end
+    return nil
+end
+
+local cache_tooltip = CreateFrame("GameTooltip", "RavenousCacheTooltip", _G.UIParent, "GameTooltipTemplate")
+cache_tooltip:SetOwner(_G.WorldFrame, "ANCHOR_NONE")
+local function TextFromHyperlink(link)
+    cache_tooltip:ClearLines()
+    cache_tooltip:SetHyperlink(link)
+    local text = RavenousCacheTooltipTextLeft1:GetText()
+    if text and text ~= "" and text ~= UNKNOWN then
+        return text
+    end
+end
+local function RenderString(s)
+    if type(s) == "function" then s = s() end
+	return string.gsub(s, "{(%l+):(%d+):?([^}]*)}", function(variant, id, fallback)
+		id = math.floor(id)
+		if variant == "item" then
+			local name, link, _, _, _, _, _, _, _, icon = GetItemInfo(id)
+			if link and icon then
+				return TextIcon(icon) .. link
+			end
+		elseif variant == "spell" then
+			local name, _, icon = GetSpellInfo(id)
+			if name and icon then
+				return TextIcon(icon) .. name
+			end
+		elseif variant == "quest" then
+			local name = C_QuestLog.GetTitleForQuestID(id)
+			if not (name and name ~= "") then
+				name = tostring(id)
+			end
+			local completed = C_QuestLog.IsQuestFlaggedCompleted(id)
+			return CreateAtlasMarkup("questnormal") .. TextColor(name, completed and "00ff00" or "ff0000")
+        elseif variant == "npc" then
+            local name = TextFromHyperlink(("unit:Creature-0-0-0-0-%d"):format(id))
+			if name and name ~= UNKNOWNOBJECT then
+                return name
+            end
+		-- elseif variant == "questid" then
+		-- 	return CreateAtlasMarkup("questnormal") .. (C_QuestLog.IsQuestFlaggedCompleted(id) and "00ff00" or "ff0000"):WrapTextInColorCode(id)
+		-- elseif variant == "npc" then
+		-- 	local name = self:NameForMob(id)
+		-- 	if name then
+		-- 		return name
+		-- 	end
+		-- elseif variant == "currency" then
+		-- 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
+		-- 	if info then
+		-- 		return quick_texture_markup(info.iconFileID) .. info.name
+		-- 	end
+		end
+		return fallback ~= "" and fallback or (variant .. ':' .. id)
+	end)
 end
 
 ---
@@ -267,7 +315,7 @@ function ns:RefreshRares()
             without = string.gsub(without, icon, "")
         end
         Rare.rare.quest = Rare.rare.quest or (faction == "Alliance" and (Rare.rare.questAlliance or nil) or (Rare.rare.questHorde or nil))
-        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly or Rare.rare.encounter) and icons.Daily or Rare.rare.achievement and icons.Achievement or Rare.rare.vendor and icons.Vendor or icons.Skull) .. without)
+        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly) and icons.Daily or Rare.rare.achievement and icons.Achievement or Rare.rare.vendor and icons.Vendor or icons.Skull) .. without)
     end
 end
 
@@ -287,17 +335,17 @@ end
 
 local function CacheItem(i, itemIDs, callback)
     local Item = Item:CreateFromItemID(itemIDs[i])
-    Item:ContinueOnItemLoad(function()
-        if i < #itemIDs then
-            -- Sadly this *must* be rate-limited
-            -- 0 = per frame, as fast as we can go
+    if i < #itemIDs then
+        -- Sadly this *must* be rate-limited
+        -- 0 = per frame, as fast as we can go
+        Item:ContinueOnItemLoad(function()
             C_Timer.After(0, function()
                 CacheItem(i + 1, itemIDs, callback)
             end)
-        else
-            callback()
-        end
-    end)
+        end)
+    else
+        callback()
+    end
 end
 
 function ns:CacheAndBuild(callback)
@@ -309,38 +357,44 @@ function ns:CacheAndBuild(callback)
     end
     local itemIDs = {}
     for _, tab in ipairs(tabs) do
-        for _, rare in pairs(tab.rares) do
-            local isWorldQuest, isAvailable = false, false
-            rare.quest = rare.quest or (faction == "Alliance" and (rare.questAlliance or nil) or (rare.questHorde or nil))
-            if type(rare.quest) == "number" then
-                if CQL.IsWorldQuest(rare.quest) or rare.worldquest then
-                    isWorldQuest = true
-                    if contains(worldQuests, rare.quest) or CQL.IsQuestFlaggedCompleted(rare.quest) then
-                        isAvailable = true
-                    elseif CQL.AddWorldQuestWatch(rare.quest) then
-                        isAvailable = true
-                        CQL.RemoveWorldQuestWatch(rare.quest)
-                    end
-                else
-                    isAvailable = CQL.IsQuestFlaggedCompleted(rare.quest) and false or true
-                end
-            end
-            if rare.hidden or rare.loot == nil or #rare.loot == 0 then
-            elseif isWorldQuest and not isAvailable then
-            else
-                for _, item in ipairs(rare.loot) do
-                    item = type(item) == "table" and item or {item}
-                    if GetItemInfo(GetItemID(item)) == nil then
-                    elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
-                    elseif RAVENOUS_data.options.showMounts == false and item.mount then
-                    elseif RAVENOUS_data.options.showPets == false and item.pet then
-                    elseif RAVENOUS_data.options.showToys == false and item.toy then
-                    elseif RAVENOUS_data.options.showCosmetics == false and item.mount == nil and item.pet == nil and item.toy == nil then
-                    elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
-                    elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
-                    elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
+        for _, expansion in ipairs(tab.expansions) do
+            for _, rare in pairs(expansion.rares) do
+                local isWorldQuest, isAvailable = false, false
+                rare.quest = rare.quest or (faction == "Alliance" and (rare.questAlliance or nil) or (rare.questHorde or nil))
+                if type(rare.quest) == "number" then
+                    if CQL.IsWorldQuest(rare.quest) or rare.worldquest then
+                        isWorldQuest = true
+                        if contains(worldQuests, rare.quest) or CQL.IsQuestFlaggedCompleted(rare.quest) then
+                            isAvailable = true
+                        elseif CQL.AddWorldQuestWatch(rare.quest) then
+                            isAvailable = true
+                            CQL.RemoveWorldQuestWatch(rare.quest)
+                        end
                     else
-                        table.insert(itemIDs, GetItemID(item))
+                        isAvailable = CQL.IsQuestFlaggedCompleted(rare.quest) and false or true
+                    end
+                end
+                if rare.hidden or rare.loot == nil or #rare.loot == 0 then
+                elseif isWorldQuest and not isAvailable then
+                else
+                    for _, item in ipairs(rare.loot) do
+                        item = type(item) == "table" and item or {item}
+                        local itemType, itemSubType, _ = select(6, GetItemInfo(GetItemID(item)))
+                        if itemType ~= nil then
+                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Questitem" then
+                            elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
+                            elseif RAVENOUS_data.options.showMounts == false and item.mount then
+                            elseif RAVENOUS_data.options.showPets == false and item.pet then
+                            elseif RAVENOUS_data.options.showToys == false and item.toy then
+                            elseif RAVENOUS_data.options.showCosmetics == false and itemSubType == "Cosmetic" then
+                            elseif RAVENOUS_data.options.showItems == false and (itemType == "Consumable" or itemType == "Questitem") then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
+                            else
+                                table.insert(itemIDs, GetItemID(item))
+                            end
+                        end
                     end
                 end
             end
@@ -354,35 +408,39 @@ end
 ---
 
 -- Sets Map Pin and returns zone.id, x1, x2, y1, y2
-function ns:SetWaypoint(rare)
+function ns:SetWaypoint(zone, rare)
     local c = GetCoordinates(rare)
 
     -- Add the waypoint to the map and track it
-    C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(GetZoneID(rare), "0." .. c[1] .. c[2], "0." .. c[3] .. c[4]))
+    C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(zone.id, "0." .. c[1] .. c[2], "0." .. c[3] .. c[4]))
     C_SuperTrack.SetSuperTrackedUserWaypoint(true)
 
     return { c[1], c[2], c[3], c[4] }
 end
 
-function ns:NewRare(tab, rare, sender)
-    local zone = GetZoneData(tab, rare)
+function ns:NewRare(zone, rare, sender)
     local c = GetCoordinates(rare)
 
     local zoneName = C_Map.GetMapInfo(zone.id).name
-    local zoneColor = zone.color and zone.color or "ffffff"
+    for _, e in ipairs(ns.data.expansions) do
+        if e.name == expansion.name then
+            zone.color = zone.color and zone.color or e.color
+            break
+        end
+    end
+    zone.color = zone.color and zone.color or "faea0d"
 
     if not sender or sender == string.format("%1$s-%2$s", UnitName("player"), GetNormalizedRealmName()) then
-        ns:PrettyPrint(rare.name .. "\n|cffffd100|Hworldmap:" .. zone.id .. ":" .. c[1] .. c[2] .. ":" .. c[3] .. c[4] .. "|h[|A:Waypoint-MapPin-ChatIcon:13:13:0:0|a |cff" .. zoneColor .. zoneName .. "|r |cffeeeeee" .. c[1] .. "." .. c[2] .. ", " .. c[3] .. "." .. c[4] .. "|r]|h|r")
+        ns:PrettyPrint(rare.name .. "\n|cffffd100|Hworldmap:" .. zone.id .. ":" .. c[1] .. c[2] .. ":" .. c[3] .. c[4] .. "|h[|A:Waypoint-MapPin-ChatIcon:13:13:0:0|a |cff" .. zone.color .. zoneName .. "|r |cffeeeeee" .. c[1] .. "." .. c[2] .. ", " .. c[3] .. "." .. c[4] .. "|r]|h|r")
     else
         local n = random(#L.TargetMessages)
         RaidNotice_AddMessage(RaidBossEmoteFrame, L.TargetMessages[n] .. " " .. rare.name .. " in " .. zoneName .. " " .. c[1] .. "." .. c[2] .. ", " .. c[3] .. "." .. c[4], ChatTypeInfo["RAID_WARNING"])
     end
 
-    ns:SetWaypoint(rare)
+    ns:SetWaypoint(zone, rare)
 end
 
-function ns:ShareRare(tab, rare, rareID)
-    local zoneID = GetZoneID(rare)
+function ns:ShareRare(zone, rare, rareID)
     local c = GetCoordinates(rare)
     local isLead = IsLead()
 
@@ -397,7 +455,7 @@ function ns:ShareRare(tab, rare, rareID)
         end)
     end
 
-    local zoneName = C_Map.GetMapInfo(zoneID).name
+    local zoneName = C_Map.GetMapInfo(zone.id).name
     local message = rare.name .. " in " .. zoneName .. " " .. C_Map.GetUserWaypointHyperlink()
 
     if IsInInstance() then
@@ -418,10 +476,10 @@ function ns:ShareRare(tab, rare, rareID)
     else
         -- SendChatMessage(message, "WHISPER", _, UnitName("player")) -- Uncomment for testing
         -- C_ChatInfo.SendAddonMessage(ADDON_NAME, rareID, "WHISPER", UnitName("player")) -- Uncomment for testing
-        ns:NewRare(tab, rare)
+        ns:NewRare(zone, rare)
     end
 
-    ns:SetWaypoint(rare)
+    ns:SetWaypoint(zone, rare)
 end
 
 ---
@@ -504,7 +562,7 @@ function ns:CreateNotes(Parent, Relative, notes, indent)
     for i, note in ipairs(notes) do
         local Note = Parent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         Note:SetJustifyH("LEFT")
-        Note:SetText(indent .. TextColor(note, "eeeeee"))
+        Note:SetText(indent .. TextColor(RenderString(note), "eeeeee"))
         Note:SetWidth(Parent:GetWidth())
         Note:SetPoint("TOPLEFT", Relative, "BOTTOMLEFT", 0, -medium-(Relative.offset or 0))
         Relative = Note
@@ -517,9 +575,15 @@ end
 -- Zone
 ---
 
-function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relativePoint)
+function ns:CreateZone(Parent, Relative, tab, expansion, zone, worldQuests, relativePoint)
+    for _, e in ipairs(ns.data.expansions) do
+        if e.name == expansion.name then
+            zone.color = zone.color and zone.color or e.color
+            break
+        end
+    end
+    zone.color = zone.color and zone.color or "faea0d"
     local mapName = zone.name and zone.name or C_Map.GetMapInfo(zone.id).name
-    local zoneColor = zone.color and zone.color or "ffffff"
     local Rares = {}
 
     local ZoneFrame = CreateFrame("Frame", ADDON_NAME .. "ZoneFrame" .. zone.id .. string.gsub(zone.name or "", "[ -']", ""), Parent)
@@ -533,7 +597,7 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
     local ZoneAnchor = CreateFrame("Button", nil, Parent)
     Zone:SetPoint("TOPLEFT", Relative, "TOPLEFT")
     Zone:SetJustifyH("LEFT")
-    Zone:SetText((zone.icon and TextIcon(zone.icon) .. "  " or "") .. TextColor(mapName, zoneColor))
+    Zone:SetText((zone.icon and TextIcon(zone.icon) .. "  " or "") .. TextColor(mapName, zone.color))
     ZoneAnchor:SetAllPoints(Zone)
     ZoneAnchor:SetScript("OnClick", function()
         -- TODO How to reliably expand/collapse
@@ -558,7 +622,7 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
             FactionAnchor:SetAllPoints(Faction)
             Faction.anchor = FactionAnchor
             Faction.faction = faction
-            Faction.color = zoneColor
+            Faction.color = zone.color
             Register("Factions", Faction)
             ns:RefreshFactions()
             LittleRelative = Faction
@@ -583,10 +647,11 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
         end
     end
 
-    -- For each Rare in the Tab
+    -- For each Rare in the Zone
     local i = 0
-    for rareID, rare in pairs(tab.rares) do
-        if GetZoneID(rare) == zone.id then
+    for rareID, rare in pairs(expansion.rares) do
+        local rareZone = GetZoneData(expansion, rare)
+        if rareZone and rareZone.id == zone.id then
             local isWorldQuest, isAvailable = false, false
             rare.quest = rare.quest or (faction == "Alliance" and (rare.questAlliance or nil) or (rare.questHorde or nil))
             if type(rare.quest) == "number" then
@@ -610,18 +675,22 @@ function ns:CreateZone(Parent, Relative, tab, zone, rares, worldQuests, relative
                     -- For each Item dropped by the Rare
                     for _, item in ipairs(rare.loot) do
                         item = type(item) == "table" and item or {item}
-                        if GetItemInfo(GetItemID(item)) == nil then
-                        elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
-                        elseif RAVENOUS_data.options.showMounts == false and item.mount then
-                        elseif RAVENOUS_data.options.showPets == false and item.pet then
-                        elseif RAVENOUS_data.options.showToys == false and item.toy then
-                        elseif RAVENOUS_data.options.showCosmetics == false and item.mount == nil and item.pet == nil and item.toy == nil then
-                        elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
-                        elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
-                        elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
-                        else
-                            -- Insert Item into Items
-                            table.insert(items, item)
+                        local itemType, itemSubType, _ = select(6, GetItemInfo(GetItemID(item)))
+                        if itemType ~= nil then
+                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Questitem" then
+                            elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
+                            elseif RAVENOUS_data.options.showMounts == false and item.mount then
+                            elseif RAVENOUS_data.options.showPets == false and item.pet then
+                            elseif RAVENOUS_data.options.showToys == false and item.toy then
+                            elseif RAVENOUS_data.options.showCosmetics == false and itemSubType == "Cosmetic" then
+                            elseif RAVENOUS_data.options.showItems == false and (itemType == "Consumable" or itemType == "Questitem") then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
+                            elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
+                            else
+                                -- Insert Item into Items
+                                table.insert(items, item)
+                            end
                         end
                     end
                 end
@@ -647,12 +716,11 @@ end
 ---
 
 function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
-    local zoneColor = zone.color and zone.color or "ffffff"
     local zoneIcon = zone.icon and zone.icon or nil
     local zoneName = C_Map.GetMapInfo(zone.id).name
     local c = GetCoordinates(rare)
 
-    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly or rare.encounter) and icons.Daily or rare.achievement and icons.Achievement or rare.vendor and icons.Vendor or icons.Skull
+    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly) and icons.Daily or rare.achievement and icons.Achievement or rare.vendor and icons.Vendor or icons.Skull
     local rareFaction = rare.faction and "|cff" .. (rare.faction == "Alliance" and "0078ff" or "b30000") .. rare.faction .. "|r" or nil
     local factionOnly = rareFaction and TextColor(L.OnlyFor) .. rareFaction or ""
     local rareControl = rare.control and "|cff" .. (rare.control == "Alliance" and "0078ff" or "b30000") .. rare.control .. "|r" or nil
@@ -662,7 +730,7 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     local Rare = CreateFrame("Button", ADDON_NAME .. "Rare" .. rareID, Parent)
     local RareLabel = Rare:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     RareLabel:SetJustifyH("LEFT")
-    RareLabel:SetText(lockedIcon .. " " .. TextColor(i .. ". ") .. rare.name .. controlRequired .. factionOnly .. drops)
+    RareLabel:SetText(lockedIcon .. " " .. rare.name .. controlRequired .. factionOnly .. drops)
     RareLabel:SetHeight(16)
     RareLabel:SetPoint("TOPLEFT", Relative, "BOTTOMLEFT", 0, -gigantic-(Relative.offset or 0))
     Rare:SetAllPoints(RareLabel)
@@ -675,7 +743,7 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
             GameTooltip:AddLine(TextColor(L.ModifierToShare, "bbbbbb"))
         end
         GameTooltip:AddLine(rare.name .. (IsRareDead(rare) and TextColor(" (" .. _G.DEAD .. ")", "bbbbbb") or ""))
-        GameTooltip:AddLine(TextColor(zoneName, zoneColor) .. " " .. c[1] .. "." .. c[2] .. ", " .. c[3] .. "." .. c[4])
+        GameTooltip:AddLine(TextColor(zoneName, zone.color) .. " " .. c[1] .. "." .. c[2] .. ", " .. c[3] .. "." .. c[4])
         if type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest) then
             GameTooltip:AddLine(icons.Quest .. " World Quest")
         elseif rare.biweekly then
@@ -692,9 +760,9 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     Rare:SetScript("OnLeave", HideTooltip)
     Rare:SetScript("OnClick", function()
         if IsShiftKeyDown() then
-            ns:ShareRare(tab, rare, rareID)
+            ns:ShareRare(zone, rare, rareID)
         else
-            ns:NewRare(tab, rare)
+            ns:NewRare(zone, rare)
         end
     end)
     RareLabel.rare = rare
@@ -709,6 +777,7 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     end
 
     if rare.notes then
+
         Relative.offset = -small
         local Notes = ns:CreateNotes(Parent, Relative, rare.notes, "    ")
         Relative = Notes
@@ -803,7 +872,7 @@ function ns:BuildWindow()
     local Heading = Window:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     Heading:SetPoint("TOP", Window, "TOP")
     Heading:SetPoint("BOTTOM", Window, "TOP", 0, -30)
-    Heading:SetText(TextColor(ns.name) .. " " .. TextColor("v" .. ns.version))
+    Heading:SetText(ns.name .. " " .. "v" .. ns.version)
 
     local LockButton = CreateFrame("Button", ADDON_NAME .. "LockButton", Window, "UIPanelButtonTemplate")
     LockButton:SetPoint("TOPLEFT", Window, "TOPLEFT", 9, -small)
@@ -867,18 +936,17 @@ function ns:BuildWindow()
         Scrollers[tab.name] = Scroller
     end
 
-    local Tab = CreateTab({
+    Tabs["General"] = CreateTab({
         label = "General",
         icon = 1542860,
         parent = Window,
         relativeTo = Window,
         relativePoint = "TOPRIGHT",
         x = -3,
-        y = -Heading:GetHeight() / 2,
+        y = -Heading:GetHeight(),
         current = true,
     })
-    Tabs["General"] = Tab
-    local previousTab = Tab
+    local previousTab = Tabs["General"]
     for _, tab in ipairs(tabs) do
         local Tab = CreateTab({
             label = tab.name,
@@ -931,7 +999,7 @@ function ns:BuildWindow()
     -- Global Notes
     local NoteHeading = Parent:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     NoteHeading:SetJustifyH("LEFT")
-    NoteHeading:SetText(TextIcon(1506451) .. "  " .. TextColor("Welcome!", "eeeeee"))
+    NoteHeading:SetText(TextIcon(1506451) .. "  " .. "Welcome!")
     NoteHeading:SetPoint("TOPLEFT", Relative, "BOTTOMLEFT", 0, -gigantic-(Relative.offset or 0))
     Relative = NoteHeading
     local Notes = ns:CreateNotes(Parent, Relative, notes)
@@ -942,14 +1010,18 @@ function ns:BuildWindow()
         Parent = Scrollers[tab.name].Content
         Relative = Parent
         local i = 1
-        for _, zone in ipairs(tab.zones) do
-            if i > 1 then
-                Relative.offset = medium
+        for _, expansion in ipairs(tab.expansions) do
+            if RAVENOUS_data.options["expansion"..expansion.name] == true then
+                for _, zone in ipairs(expansion.zones) do
+                    if i > 1 then
+                        Relative.offset = medium
+                    end
+                    i = i + 1
+                    -- Zone
+                    local Zone = ns:CreateZone(Parent, Relative, tab, expansion, zone, worldQuests)
+                    Relative = Zone
+                end
             end
-            i = i + 1
-            -- Zone
-            local Zone = ns:CreateZone(Parent, Relative, tab, zone, tab.rares, worldQuests)
-            Relative = Zone
         end
         -- Notes
         if tab.notes and #tab.notes > 0 then
@@ -965,7 +1037,7 @@ function ns:BuildWindow()
     end
 
     for title, Tab in pairs(Tabs) do
-        Tab:SetScript("OnClick", function(self)
+        Tab:SetScript("OnClick", function()
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
             for lookup, Scroller in pairs(Scrollers) do
                 if title == lookup then
@@ -976,4 +1048,131 @@ function ns:BuildWindow()
             end
         end)
     end
+end
+
+---
+-- Minimap Button
+-- Thanks to Leatrix for the gist of this code!
+---
+
+function ns:CreateMinimapButton()
+    if RAVENOUS_data.options.minimapButton ~= true then
+        if ns.MinimapButton then ns.MinimapButton:Hide() end
+        return
+    end
+
+    local Button = CreateFrame("Button", nil, Minimap)
+    Button:SetFrameStrata("MEDIUM")
+    Button:SetFrameLevel(8)
+    Button:SetSize(31, 31)
+    Button:EnableMouse(true)
+    Button:SetMovable(true)
+    Button:ClearAllPoints()
+
+    Button:SetHighlightTexture(136477) --"Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
+    local overlay = Button:CreateTexture(nil, "OVERLAY")
+    overlay:SetSize(53, 53)
+    overlay:SetTexture(136430) --"Interface\\Minimap\\MiniMap-TrackingBorder"
+    overlay:SetPoint("TOPLEFT")
+    local background = Button:CreateTexture(nil, "BACKGROUND")
+    background:SetSize(20, 20)
+    background:SetTexture(136467) --"Interface\\Minimap\\UI-Minimap-Background"
+    background:SetPoint("TOPLEFT", 7, -5)
+    local icon = Button:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(23, 23)
+    icon:SetTexture("Interface/AddOns/rav/rav.tga")
+    icon:SetPoint("TOPLEFT", 6, -6)
+
+    local minimapShapes = {
+        ["ROUND"] = {true, true, true, true},
+        ["SQUARE"] = {false, false, false, false},
+        ["CORNER-TOPLEFT"] = {false, false, false, true},
+        ["CORNER-TOPRIGHT"] = {false, false, true, false},
+        ["CORNER-BOTTOMLEFT"] = {false, true, false, false},
+        ["CORNER-BOTTOMRIGHT"] = {true, false, false, false},
+        ["SIDE-LEFT"] = {false, true, false, true},
+        ["SIDE-RIGHT"] = {true, false, true, false},
+        ["SIDE-TOP"] = {false, false, true, true},
+        ["SIDE-BOTTOM"] = {true, true, false, false},
+        ["TRICORNER-TOPLEFT"] = {false, true, true, true},
+        ["TRICORNER-TOPRIGHT"] = {true, false, true, true},
+        ["TRICORNER-BOTTOMLEFT"] = {true, true, false, true},
+        ["TRICORNER-BOTTOMRIGHT"] = {true, true, true, false},
+    }
+
+    local rad, cos, sin, sqrt, max, min = math.rad, math.cos, math.sin, math.sqrt, math.max, math.min
+    function updatePosition(button, position)
+        local angle = rad(position or 225)
+        local x, y, q = cos(angle), sin(angle), 1
+        if x < 0 then q = q + 1 end
+        if y > 0 then q = q + 2 end
+        local minimapShape = GetMinimapShape and GetMinimapShape() or "ROUND"
+        local quadTable = minimapShapes[minimapShape]
+        local w = (Minimap:GetWidth() / 2) + 5
+        local h = (Minimap:GetHeight() / 2) + 5
+        if quadTable[q] then
+            x, y = x*w, y*h
+        else
+            local diagRadiusW = sqrt(2*(w)^2)-10
+            local diagRadiusH = sqrt(2*(h)^2)-10
+            x = max(-w, min(x*diagRadiusW, w))
+            y = max(-h, min(y*diagRadiusH, h))
+        end
+        button:ClearAllPoints()
+        button:SetPoint("CENTER", Minimap, "CENTER", x, y)
+    end
+    updatePosition(Button, RAV_data.options.minimapPosition)
+
+    local deg, atan2 = math.deg, math.atan2
+    local function onUpdate(self)
+        local mx, my = Minimap:GetCenter()
+        local px, py = GetCursorPosition()
+        local scale = Minimap:GetEffectiveScale()
+        px, py = px / scale, py / scale
+        local pos = 225
+        if self.db then
+            pos = deg(atan2(py - my, px - mx)) % 360
+            self.db.minimapPos = pos
+        else
+            pos = deg(atan2(py - my, px - mx)) % 360
+            self.minimapPos = pos
+        end
+        updatePosition(self, pos)
+        RAV_data.options.minimapPosition = pos
+    end
+
+    Button:RegisterForDrag("LeftButton")
+    Button:SetScript("OnDragStart", function()
+        Button:StartMoving()
+        Button.isMoving = true
+        Button:SetScript("OnUpdate", onUpdate)
+    end)
+
+    Button:SetScript("OnDragStop", function()
+        Button:StopMovingOrSizing()
+        Button.isMoving = false
+        Button:SetScript("OnUpdate", nil)
+    end)
+
+    Button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self or UIParent, "ANCHOR_CURSOR")
+        GameTooltip:SetText(TextColor(ns.name))
+        GameTooltip:AddLine(L.MinimapLClick)
+        GameTooltip:AddLine(L.MinimapRClick)
+        GameTooltip:Show()
+    end)
+    Button:SetScript("OnLeave", HideTooltip)
+
+    Button:SetScript("OnMouseUp", function(self, button)
+        if not self.isMoving then
+            if button == "RightButton" then
+                ns.waitingForOptions = true
+                ns:PrettyPrint(_G.LFG_LIST_LOADING)
+            else
+                ns:ToggleWindow(ns.Window)
+            end
+        end
+    end)
+
+    ns.MinimapButton = Button
 end

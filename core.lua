@@ -22,25 +22,33 @@ function ravenous_OnEvent(self, event, arg, ...)
         end)
         local message, channel, sender, _ = ...
         local rareID = math.floor(message)
+        local bubbleBreak = false
         for _, tab in ipairs(ns.data.tabs) do
-            for id, rare in pairs(tab.rares) do
-                if id == rareID then
-                    ns:NewRare(tab, rare, sender)
-                    break
+            for _, expansion in ipairs(tab.expansions) do
+                for id, rare in pairs(expansion.rares) do
+                    if id == rareID then
+                        ns:NewRare(getZoneData(expansion, rare), rare, sender)
+                        bubbleBreak = true
+                        break
+                    end
                 end
+                if bubbleBreak then break end
             end
+            if bubbleBreak then break end
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
         -- Prepare AddOn data, window, options
         ns:SetDefaultOptions()
-        ns:BuildOptions()
         InterfaceOptions_AddCategory(ns.Options)
+        ns:CreateMinimapButton()
         ns:EnsureMacro()
-        C_Timer.After(5, function()
+        C_Timer.After(0, function()
             -- Loop through SilverDragon data
-            for _, expansion in ipairs(ns.data.expansions) do
-                for k, v in pairs(SilverDragon.datasources[expansion]) do
-                    ns.data.tabs[1].rares[k] = v
+            for _, expansion in ipairs(ns.data.tabs[1].expansions) do
+                if RAVENOUS_data.options["expansion"..expansion.name] == true then
+                    for k, v in pairs(SilverDragon.datasources[expansion.name]) do
+                        expansion.rares[k] = v
+                    end
                 end
             end
             -- Cache data, set up window and options
@@ -58,6 +66,16 @@ function ravenous_OnEvent(self, event, arg, ...)
                 if ns.waitingForOptions then
                     InterfaceOptionsFrame_OpenToCategory(ns.Options)
                     InterfaceOptionsFrame_OpenToCategory(ns.Options)
+                end
+                if ns.MinimapButton then
+                    ns.MinimapButton:SetScript("OnMouseUp", function(self, button)
+                        if button == "RightButton" then
+                            InterfaceOptionsFrame_OpenToCategory(ns.Options)
+                            InterfaceOptionsFrame_OpenToCategory(ns.Options)
+                        else
+                            ns:ToggleWindow(ns.Window)
+                        end
+                    end)
                 end
             end)
         end)

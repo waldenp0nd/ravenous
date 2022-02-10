@@ -47,37 +47,54 @@ function ns:SetDefaultOptions()
     end
 end
 
-function ns:BuildOptions()
-    local Options = CreateFrame("Frame", ADDON_NAME .. "Options", InterfaceOptionsFramePanelContainer)
-    Options.name = ns.name
-    Options.controlTable = {}
-    Options.okay = function(self)
-        for _, Control in pairs(self.Controls) do
-            RAVENOUS_data.options[Control.var] = Control:GetValue()
-            if Control.restart then
-                ReloadUI()
-            end
+local Options = CreateFrame("Frame", ADDON_NAME .. "Options", InterfaceOptionsFramePanelContainer)
+Options.name = ns.name
+Options.controlTable = {}
+Options.okay = function(self)
+    for _, Control in pairs(self.Controls) do
+        RAVENOUS_data.options[Control.var] = Control:GetValue()
+        if Control.restart then
+            ReloadUI()
         end
     end
-    Options.default = function(self)
-        for _, Control in pairs(self.Controls) do
-            RAVENOUS_data.options[Control.var] = ns.defaults[Control.var]
+end
+Options.default = function(self)
+    for _, Control in pairs(self.Controls) do
+        RAVENOUS_data.options[Control.var] = ns.defaults[Control.var]
+    end
+    ReloadUI()
+end
+Options.cancel = function(self)
+    for _, Control in pairs(self.Controls) do
+        if Control.oldValue and Control.oldValue ~= Control.getValue() then
+            Control:SetValue()
         end
-        ReloadUI()
     end
-    Options.cancel = function(self)
-        for _, Control in pairs(self.Controls) do
-            if Control.oldValue and Control.oldValue ~= Control.getValue() then
-                Control:SetValue()
-            end
-        end
-    end
-    Options.refresh = function(self)
-        RefreshControls(self.Controls)
-    end
+end
+Options.refresh = function(self)
+    RefreshControls(self.Controls)
+end
+Options:Hide()
+Options:SetScript("OnShow", function()
+    local fullWidth = Options:GetWidth() - (large * 2)
+
+    local HeaderPanel = CreateFrame("Frame", "HeaderPanel", Options)
+    HeaderPanel:SetPoint("TOPLEFT", Options, "TOPLEFT", large, -large)
+    HeaderPanel:SetWidth(fullWidth)
+    HeaderPanel:SetHeight(large * 4)
+
+    local LeftPanel = CreateFrame("Frame", "LeftPanel", Options)
+    LeftPanel:SetPoint("TOPLEFT", HeaderPanel, "BOTTOMLEFT", 0, -large)
+    LeftPanel:SetWidth(fullWidth / 2 - large)
+    LeftPanel:SetHeight(Options:GetHeight() - HeaderPanel:GetHeight() - (large * 3))
+
+    local RightPanel = CreateFrame("Frame", "RightPanel", Options)
+    RightPanel:SetPoint("TOPRIGHT", HeaderPanel, "BOTTOMRIGHT", 0, -large)
+    RightPanel:SetWidth(fullWidth / 2 - large)
+    RightPanel:SetHeight(Options:GetHeight() - HeaderPanel:GetHeight() - (large * 3))
 
     local OptionsHeading = Options:CreateFontString(ADDON_NAME .. "OptionsHeading", "ARTWORK", "GameFontNormalLarge")
-    OptionsHeading:SetPoint("TOPLEFT", Options, "TOPLEFT", large, -large)
+    OptionsHeading:SetPoint("TOPLEFT", HeaderPanel, "TOPLEFT", 0, 0)
     OptionsHeading:SetJustifyH("LEFT")
     OptionsHeading:SetText(ns.name .. " v" .. ns.version)
 
@@ -87,16 +104,17 @@ function ns:BuildOptions()
     OptionsSubHeading:SetText("|cffffffff" .. ns.notes .. "|r")
 
     local OptionsConfiguration = Options:CreateFontString(ADDON_NAME .. "OptionsConfiguration", "ARTWORK", "GameFontNormalLarge")
-    OptionsConfiguration:SetPoint("TOPLEFT", OptionsSubHeading, "BOTTOMLEFT", 0, -gigantic)
+    OptionsConfiguration:SetPoint("TOPLEFT", LeftPanel, "TOPLEFT", 0, 0)
+    OptionsConfiguration:SetHeight(large + medium)
     OptionsConfiguration:SetJustifyH("LEFT")
     OptionsConfiguration:SetText(_G.GAMEOPTIONS_MENU .. ":")
-
     local previous = OptionsConfiguration
+
     for _, Default in pairs(L.Defaults) do
         local defaultValue = ns.defaults[Default.var]
         if type(defaultValue) == "boolean" then
             local Checkbox = CreateFrame("CheckButton", ADDON_NAME .. "OptionsCheckbox" .. Default.var, Options, "InterfaceOptionsCheckButtonTemplate")
-            Checkbox:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -medium)
+            Checkbox:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -medium+small)
             Checkbox.Text:SetText(Default.text)
             Checkbox.tooltipText = Default.tooltip
             Checkbox.restart = false
@@ -138,6 +156,44 @@ function ns:BuildOptions()
     Support2:SetJustifyH("LEFT")
     Support2:SetText("|cffffffff" .. L.Support2 .. "|r")
 
+    local ExpansionsConfiguration = Options:CreateFontString(ADDON_NAME .. "ExpansionsConfiguration", "ARTWORK", "GameFontNormalLarge")
+    ExpansionsConfiguration:SetPoint("TOPLEFT", RightPanel, "TOPLEFT", 0, 0)
+    ExpansionsConfiguration:SetHeight(large + medium)
+    ExpansionsConfiguration:SetJustifyH("RIGHT")
+    ExpansionsConfiguration:SetText("Expansions:")
+
+    local previous = ExpansionsConfiguration
+    for _, expansion in ipairs(ns.data.expansions) do
+        local defaultValue = ns.defaults["expansion"..expansion.name]
+        if type(defaultValue) == "boolean" then
+            local Checkbox = CreateFrame("CheckButton", ADDON_NAME .. "ExpansionsCheckbox" .. expansion.name, Options, "InterfaceOptionsCheckButtonTemplate")
+            Checkbox:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -medium+small)
+            Checkbox.Text:SetText(expansion.title and expansion.title or expansion.name)
+            Checkbox.tooltipText = "When enabled, data from this expansion will be parsed and shown."
+            Checkbox.restart = false
+            Checkbox.tooltipText = Checkbox.tooltipText .. "\n" .. RED_FONT_COLOR:WrapTextInColorCode(REQUIRES_RELOAD)
+            Checkbox.var = "expansion"..expansion.name
+
+            Checkbox.GetValue = function(self)
+                return self:GetChecked()
+            end
+            Checkbox.SetValue = function(self)
+                self:SetChecked(RAVENOUS_data.options["expansion"..expansion.name])
+            end
+
+            Checkbox:SetScript("OnClick", function(self)
+                PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                self.restart = not self.restart
+                RAVENOUS_data.options["expansion"..expansion.name] = self:GetChecked()
+                RefreshControls(Options.Controls)
+            end)
+
+            RegisterControl(Checkbox, Options)
+            previous = Checkbox
+        end
+    end
+
     RefreshControls(Options.Controls)
-    ns.Options = Options
-end
+    Options:SetScript("OnShow", nil)
+end)
+ns.Options = Options
