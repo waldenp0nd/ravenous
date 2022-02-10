@@ -381,13 +381,13 @@ function ns:CacheAndBuild(callback)
                         item = type(item) == "table" and item or {item}
                         local itemType, itemSubType, _ = select(6, GetItemInfo(GetItemID(item)))
                         if itemType ~= nil then
-                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Container" and itemType ~= "Recipe" and itemType ~= "Questitem" then
+                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Container" and itemType ~= "Questitem" then
                             elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
                             elseif RAVENOUS_data.options.showMounts == false and item.mount then
                             elseif RAVENOUS_data.options.showPets == false and item.pet then
                             elseif RAVENOUS_data.options.showToys == false and item.toy then
                             elseif RAVENOUS_data.options.showCosmetics == false and itemSubType == "Cosmetic" then
-                            elseif RAVENOUS_data.options.showItems == false and (itemType ~= "Consumable" or itemType ~= "Container" or itemType ~= "Recipe" or itemType ~= "Questitem") then
+                            elseif RAVENOUS_data.options.showItems == false and (itemType == "Consumable" or itemType == "Container" or itemType == "Questitem") then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then
@@ -677,13 +677,13 @@ function ns:CreateZone(Parent, Relative, tab, expansion, zone, worldQuests, rela
                         item = type(item) == "table" and item or {item}
                         local itemType, itemSubType, _ = select(6, GetItemInfo(GetItemID(item)))
                         if itemType ~= nil then
-                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Container" and itemType ~= "Recipe" and itemType ~= "Questitem" then
+                            if item.mount == nil and item.pet == nil and item.toy == nil and itemSubType ~= "Cosmetic" and itemType ~= "Consumable" and itemType ~= "Container" and itemType ~= "Questitem" then
                             elseif RAVENOUS_data.options.showOwned == false and IsItemOwned(item) then
                             elseif RAVENOUS_data.options.showMounts == false and item.mount then
                             elseif RAVENOUS_data.options.showPets == false and item.pet then
                             elseif RAVENOUS_data.options.showToys == false and item.toy then
                             elseif RAVENOUS_data.options.showCosmetics == false and itemSubType == "Cosmetic" then
-                            elseif RAVENOUS_data.options.showItems == false and (itemType ~= "Consumable" or itemType ~= "Container" or itemType ~= "Recipe" or itemType ~= "Questitem") then
+                            elseif RAVENOUS_data.options.showItems == false and (itemType == "Consumable" or itemType == "Container" or itemType == "Questitem") then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.covenant and item.covenant ~= covenant then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.faction and item.faction:upper() ~= faction:upper() then
                             elseif RAVENOUS_data.options.showCannotUse == false and item.class and item.class:upper() ~= class:upper() then

@@ -2,7 +2,7 @@ local ADDON_NAME, ns = ...
 
 ns.data = {
     notes = {
-        "This is Ravenous, a personal AddOn for tracking World, Dungeon, and Raid Bosses which drop noteworthy loot: mounts, pets, toys, cosmetics, and items (consumable, container, recipes, quest items).",
+        "This is Ravenous, a personal AddOn for tracking World, Dungeon, and Raid Bosses which drop noteworthy loot: mounts, pets, toys, cosmetics, and items (consumables, containers, quest items).",
         "To-Do:",
         "- Bubble the check for Items against Rares up to the Zone so it is not shown if there are no Rares shown.",
         "- More investigation into caching and using SilverDragon.",
@@ -57,7 +57,7 @@ ns.data = {
     tabs = {
         {
             name = "World Rares",
-            icon = 236702,
+            icon = 1354172,
             expansions = {
                 {
                     name = "Shadowlands",
