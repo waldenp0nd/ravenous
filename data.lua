@@ -6,6 +6,7 @@ ns.data = {
         "To-Do:",
         "- Bubble the check for Items against Rares up to the Zone so it is not shown if there are no Rares shown.",
         "- More investigation into caching and using SilverDragon.",
+        "- Consolidate CreateWindow, CreateZone, CreateRare, and CreateItem into a single function to get rid of the headache of passing down data.",
     },
     expansions = {
         -- {
@@ -73,7 +74,7 @@ ns.data = {
                             id = 1961,
                             icon = 3052062,
                             faction = {2470, 2472},
-                            currency = 1931,
+                            currency = {1977, 1931},
                         },
                         {
                             -- The Maw
@@ -329,14 +330,14 @@ ns.data = {
                         },
                     },
                     rares = {
-                        [52151] = {name="Bloodlord Mandokir",locations={[50]={72003280}},loot={{68823,mount=410}},encounter=2},
-                        [52059] = {name="High Priestess Kilnara",locations={[50]={72003280}},loot={{68824,mount=411}},encounter=4},
-                        [43873] = {name="Altairus",locations={[249]={77008400}},loot={{63040,mount=395}},encounter=2},
-                        [46753] = {name="Al'Akir",locations={[249]={36008400}},loot={{63041,mount=396}},encounter=2},
-                        [52530] = {name="Alysrazor",locations={[198]={47007700}},loot={{71665,mount=425}},encounter=4},
-                        [52409] = {name="Ragnaros",locations={[198]={47007700}},loot={{69224,mount=415}},encounter=7},
-                        [55294] = {name="Ultraxion",locations={[75]={65005000}},loot={{78919,mount=445}},encounter=5},
-                        [56173] = {name="Deathwing",locations={[75]={65005000}},loot={{77067,mount=442},{77069,mount=444}},encounter=8},
+                        [52151] = {name="Bloodlord Mandokir",locations={[50]={72003280}},loot={{68823,mount=410}},encounter=true},
+                        [52059] = {name="High Priestess Kilnara",locations={[50]={72003280}},loot={{68824,mount=411}},encounter=true},
+                        [43873] = {name="Altairus",locations={[249]={77008400}},loot={{63040,mount=395}},encounter=true},
+                        [46753] = {name="Al'Akir",locations={[249]={36008400}},loot={{63041,mount=396}},encounter=true},
+                        [52530] = {name="Alysrazor",locations={[198]={47007700}},loot={{71665,mount=425}},encounter=true},
+                        [52409] = {name="Ragnaros",locations={[198]={47007700}},loot={{69224,mount=415}},encounter=true},
+                        [55294] = {name="Ultraxion",locations={[75]={65005000}},loot={{78919,mount=445}},encounter=true},
+                        [56173] = {name="Madness of Deathwing",locations={[75]={65005000}},loot={{77067,mount=442},{77069,mount=444}},encounter=true},
                     },
                 },
                 {
@@ -356,8 +357,8 @@ ns.data = {
                         },
                     },
                     rares = {
-                        [33288] = {name="Yogg-Saron",locations={[120]={41001600}},loot={{45693,mount=304,chance=1}},notes={"Must be done on Hard Mode (Alone in the Dark)."},encounter=13},
-                        [36597] = {name="The Lich King",locations={[118]={54008500}},loot={{50818,mount=363,chance=1}},encounter=12},
+                        [33288] = {name="Yogg-Saron",locations={[120]={41001600}},loot={{45693,mount=304,chance=1}},notes={"Must be done on Hard Mode (Alone in the Dark)."},encounter=true},
+                        [36597] = {name="The Lich King",locations={[118]={54008500}},loot={{50818,mount=363,chance=1}},encounter=true},
                     },
                 },
                 {
@@ -377,8 +378,8 @@ ns.data = {
                         },
                     },
                     rares = {
-                        [16152] = {name="Attumen the Huntsman",locations={[42]={47007700}},loot={{30480,mount=168,chance=1},},encounter=2},
-                        [19622] = {name="Kael'thas Sunstrider",locations={[109]={74006500}},loot={{32458,mount=183,chance=1.7}},encounter=4},
+                        [16152] = {name="Attumen the Huntsman",locations={[42]={47007700}},loot={{30480,mount=168,chance=1},},encounter=true},
+                        [19622] = {name="Kael'thas Sunstrider",locations={[109]={74006500}},loot={{32458,mount=183,chance=1.7}},encounter=true},
                     },
                 },
                 {
@@ -491,6 +492,12 @@ ns.data = {
             id = 1931,
             color = "dfd4ad",
             icon = 1506458,
+        },
+        {
+            -- Cataloged Research
+            id = 1977,
+            color = "8bd8ec",
+            icon = 636333,
         },
     },
     reputationColors = {

@@ -100,9 +100,11 @@ local function IsRareDead(rare)
     elseif rare.encounter then
         for i = 1, GetNumSavedInstances(), 1 do
             local name, id, reset, difficulty, locked, extended, instanceIDMostSig, isRaid, maxPlayers, difficultyName, numEncounters, encounterProgress, extendDisabled = GetSavedInstanceInfo(i)
-            local bossName, fileDataID, isKilled, _ = GetSavedInstanceEncounterInfo(i, rare.encounter)
-            if bossName == rare.name and locked == true then
-                return isKilled
+            for encounter = 1, numEncounters do
+                local bossName, fileDataID, isKilled, _ = GetSavedInstanceEncounterInfo(i, encounter)
+                if bossName == rare.name then
+                    return (locked and isKilled)
+                end
             end
         end
     end
@@ -422,12 +424,6 @@ function ns:NewRare(zone, rare, sender)
     local c = GetCoordinates(rare)
 
     local zoneName = C_Map.GetMapInfo(zone.id).name
-    for _, e in ipairs(ns.data.expansions) do
-        if e.name == expansion.name then
-            zone.color = zone.color and zone.color or e.color
-            break
-        end
-    end
     zone.color = zone.color and zone.color or "faea0d"
 
     if not sender or sender == string.format("%1$s-%2$s", UnitName("player"), GetNormalizedRealmName()) then
@@ -613,7 +609,7 @@ function ns:CreateZone(Parent, Relative, tab, expansion, zone, worldQuests, rela
             local Faction = Parent:CreateFontString(ADDON_NAME .. "Zone" .. zone.id .. (string.gsub(zone.name or "", "[ -']", "")) .. "Faction", "ARTWORK", "GameFontNormal")
             if i > 1 then
                 Faction:SetPoint("TOPLEFT", LittleRelative, "BOTTOMLEFT", 0, -medium)
-                Relative.offset = Relative.offset + large
+                Relative.offset = Relative.offset + large + small
             else
                 Faction:SetPoint("LEFT", LittleRelative, "RIGHT", large, 0)
             end
@@ -635,7 +631,7 @@ function ns:CreateZone(Parent, Relative, tab, expansion, zone, worldQuests, rela
             local Currency = Parent:CreateFontString(ADDON_NAME .. "Zone" .. zone.id .. (string.gsub(zone.name or "", "[ -']", "")) .. "Currency", "ARTWORK", "GameFontNormal")
             if i > 1 or zone.faction then
                 Currency:SetPoint("TOPLEFT", LittleRelative, "BOTTOMLEFT", 0, -medium)
-                Relative.offset = Relative.offset + large
+                Relative.offset = Relative.offset + large + small
             else
                 Currency:SetPoint("LEFT", LittleRelative, "RIGHT", large, 0)
             end
