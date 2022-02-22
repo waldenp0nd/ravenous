@@ -67,7 +67,9 @@ local icons = {
     ["Achievement"] = TextIcon(235415, 20),
     ["Checkmark"] = TextIcon(628564),
     ["Skull"] = TextIcon(137025),
-    ["Vendor"] = TextIcon(130767),
+    ["Vendor"] = TextIcon(136452),
+    ["Dungeon"] = TextIcon(1502543, 20),
+    ["Raid"] = TextIcon(1502548, 20),
 }
 
 local function IsLead()
@@ -86,24 +88,35 @@ end
 
 local function IsRareDead(rare)
     if type(rare.quest) == "table" then
+        -- Faction-check
         if rare.quest[faction:lower()] then
             return CQL.IsQuestFlaggedCompleted(rare.quest[faction:lower()])
         end
-        for _, quest in ipairs(rare.quest) do
-            if not CQL.IsQuestFlaggedCompleted(quest) then
-                return false
+        -- Any quest returns true
+        if rare.quest.any then
+            for _, quest in ipairs(rare.quest) do
+                if type(quest) == "number" and CQL.IsQuestFlaggedCompleted(quest) == true then
+                    return true
+                end
             end
+            return false
+        end
+        -- All quests return true
+        for _, quest in ipairs(rare.quest) do
+            return CQL.IsQuestFlaggedCompleted(quest)
         end
         return true
     elseif rare.quest then
         return CQL.IsQuestFlaggedCompleted(rare.quest)
-    elseif rare.encounter then
+    elseif rare.dungeon or rare.raid then
         for i = 1, GetNumSavedInstances(), 1 do
             local name, id, reset, difficulty, locked, extended, instanceIDMostSig, isRaid, maxPlayers, difficultyName, numEncounters, encounterProgress, extendDisabled = GetSavedInstanceInfo(i)
-            for encounter = 1, numEncounters do
-                local bossName, fileDataID, isKilled, _ = GetSavedInstanceEncounterInfo(i, encounter)
-                if bossName == rare.name then
-                    return (locked and isKilled)
+            if rare.heroic == nil or (rare.heroic and string.match(difficultyName:upper(), "HEROIC")) then
+                for encounter = 1, numEncounters do
+                    local bossName, fileDataID, isKilled, _ = GetSavedInstanceEncounterInfo(i, encounter)
+                    if bossName == rare.name then
+                        return (locked and isKilled)
+                    end
                 end
             end
         end
@@ -317,7 +330,7 @@ function ns:RefreshRares()
             without = string.gsub(without, icon, "")
         end
         Rare.rare.quest = Rare.rare.quest or (faction == "Alliance" and (Rare.rare.questAlliance or nil) or (Rare.rare.questHorde or nil))
-        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly) and icons.Daily or Rare.rare.achievement and icons.Achievement or Rare.rare.vendor and icons.Vendor or icons.Skull) .. without)
+        Rare:SetText((IsRareDead(Rare.rare) and icons.Checkmark or ((type(Rare.rare.quest) == "number" and CQL.IsWorldQuest(Rare.rare.quest))) and icons.LegendaryQuest or (Rare.rare.biweekly or Rare.rare.weekly or Rare.rare.fortnightly) and icons.Daily or Rare.rare.achievement and icons.Achievement or Rare.rare.vendor and icons.Vendor or Rare.rare.dungeon and icons.Dungeon or Rare.rare.raid and icons.Raid or icons.Skull) .. without)
     end
 end
 
@@ -716,9 +729,11 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     local zoneName = C_Map.GetMapInfo(zone.id).name
     local c = GetCoordinates(rare)
 
-    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly) and icons.Daily or rare.achievement and icons.Achievement or rare.vendor and icons.Vendor or icons.Skull
+    local lockedIcon = IsRareDead(rare) and icons.Checkmark or ((type(rare.quest) == "number" and CQL.IsWorldQuest(rare.quest))) and icons.LegendaryQuest or (rare.biweekly or rare.weekly or rare.fortnightly) and icons.Daily or rare.achievement and icons.Achievement or rare.vendor and icons.Vendor or rare.dungeon and icons.Dungeon or rare.raid and icons.Raid or icons.Skull
+
     local rareFaction = rare.faction and "|cff" .. (rare.faction == "Alliance" and "0078ff" or "b30000") .. rare.faction .. "|r" or nil
     local factionOnly = rareFaction and TextColor(L.OnlyFor) .. rareFaction or ""
+    local heroicOnly = rare.heroic and TextColor("Heroic") .. " " or ""
     local rareControl = rare.control and "|cff" .. (rare.control == "Alliance" and "0078ff" or "b30000") .. rare.control .. "|r" or nil
     local controlRequired = rareControl and TextColor(string.format(L.ZoneControl, rareControl)) or ""
     local drops = #items > 0 and  " " .. TextColor(rare.vendor and L.Sells or L.Drops, "bbbbbb") or ""
@@ -726,7 +741,7 @@ function ns:CreateRare(Parent, Relative, i, tab, zone, rare, rareID, items)
     local Rare = CreateFrame("Button", ADDON_NAME .. "Rare" .. rareID, Parent)
     local RareLabel = Rare:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     RareLabel:SetJustifyH("LEFT")
-    RareLabel:SetText(lockedIcon .. " " .. rare.name .. controlRequired .. factionOnly .. drops)
+    RareLabel:SetText(lockedIcon .. " " .. heroicOnly .. rare.name .. controlRequired .. factionOnly .. drops)
     RareLabel:SetHeight(16)
     RareLabel:SetPoint("TOPLEFT", Relative, "BOTTOMLEFT", 0, -gigantic-(Relative.offset or 0))
     Rare:SetAllPoints(RareLabel)

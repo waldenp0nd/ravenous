@@ -197,6 +197,16 @@ ns.data = {
                             icon = 618796
                         },
                         {
+                            -- Isle of Giants
+                            id = 507,
+                            icon = 236192
+                        },
+                        {
+                            -- Isle of Thunder
+                            id = 504,
+                            icon = 136014
+                        },
+                        {
                             -- Darkmoon Island
                             id = 407,
                             icon = 1100023
@@ -330,14 +340,14 @@ ns.data = {
                         },
                     },
                     rares = {
-                        [52151] = {name="Bloodlord Mandokir",locations={[50]={72003280}},loot={{68823,mount=410}},encounter=true},
-                        [52059] = {name="High Priestess Kilnara",locations={[50]={72003280}},loot={{68824,mount=411}},encounter=true},
-                        [43873] = {name="Altairus",locations={[249]={77008400}},loot={{63040,mount=395}},encounter=true},
-                        [46753] = {name="Al'Akir",locations={[249]={36008400}},loot={{63041,mount=396}},encounter=true},
-                        [52530] = {name="Alysrazor",locations={[198]={47007700}},loot={{71665,mount=425}},encounter=true},
-                        [52409] = {name="Ragnaros",locations={[198]={47007700}},loot={{69224,mount=415}},encounter=true},
-                        [55294] = {name="Ultraxion",locations={[75]={65005000}},loot={{78919,mount=445}},encounter=true},
-                        [56173] = {name="Madness of Deathwing",locations={[75]={65005000}},loot={{77067,mount=442},{77069,mount=444}},encounter=true},
+                        [52151] = {name="Bloodlord Mandokir",locations={[50]={72003280}},loot={{68823,mount=410}},dungeon=true},
+                        [52059] = {name="High Priestess Kilnara",locations={[50]={72003280}},loot={{68824,mount=411}},dungeon=true},
+                        [43873] = {name="Altairus",locations={[249]={77008400}},loot={{63040,mount=395}},dungeon=true},
+                        [46753] = {name="Al'Akir",locations={[249]={36008400}},loot={{63041,mount=396}},raid=true},
+                        [52530] = {name="Alysrazor",locations={[198]={47007700}},loot={{71665,mount=425}},raid=true},
+                        [52409] = {name="Ragnaros",locations={[198]={47007700}},loot={{69224,mount=415}},raid=true,chance=2.1},
+                        [55294] = {name="Ultraxion",locations={[75]={65005000}},loot={{78919,mount=445}},raid=true},
+                        [56173] = {name="Madness of Deathwing",locations={[75]={65005000}},loot={{77067,mount=442},{77069,mount=444}},raid=true,heroic=true},
                     },
                 },
                 {
@@ -357,8 +367,8 @@ ns.data = {
                         },
                     },
                     rares = {
-                        [33288] = {name="Yogg-Saron",locations={[120]={41001600}},loot={{45693,mount=304,chance=1}},notes={"Must be done on Hard Mode (Alone in the Dark)."},encounter=true},
-                        [36597] = {name="The Lich King",locations={[118]={54008500}},loot={{50818,mount=363,chance=1}},encounter=true},
+                        [33288] = {name="Yogg-Saron",locations={[120]={41001600}},loot={{45693,mount=304,chance=1}},notes={"Must be done on Hard Mode (Alone in the Dark)."},raid=true},
+                        [36597] = {name="The Lich King",locations={[118]={54008500}},loot={{50818,mount=363,chance=1}},raid=true,heroic=true},
                     },
                 },
                 {
@@ -376,10 +386,24 @@ ns.data = {
                             id = 109,
                             icon = 250117,
                         },
+                        {
+                            -- Terokkar Forest → Sethekk Halls
+                            name = "Sethekk Halls",
+                            id = 108,
+                            icon = 236847,
+                        },
+                        {
+                            -- Isle of Quel-Danas → Magisters' Terrace
+                            name = "Magisters' Terrace",
+                            id = 122,
+                            icon = 236806,
+                        },
                     },
                     rares = {
-                        [16152] = {name="Attumen the Huntsman",locations={[42]={47007700}},loot={{30480,mount=168,chance=1},},encounter=true},
-                        [19622] = {name="Kael'thas Sunstrider",locations={[109]={74006500}},loot={{32458,mount=183,chance=1.7}},encounter=true},
+                        [16152] = {name="Attumen the Huntsman",locations={[42]={47007700}},loot={{30480,mount=168,chance=1},},raid=true},
+                        [19622] = {name="Kael'thas Sunstrider",locations={[109]={74006500}},loot={{32458,mount=183,chance=1.7}},raid=true},
+                        [23035] = {name="Anzu",locations={[108]={44606560}},loot={{32768,mount=185}},dungeon=true,heroic=true},
+                        [24664] = {name="Kael'thas Sunstrider",locations={[122]={60903070}},loot={{35513,mount=213}},dungeon=true,heroic=true},
                     },
                 },
                 {
@@ -391,9 +415,16 @@ ns.data = {
                             id = 22,
                             icon = 134554,
                         },
+                        {
+                            -- Silithus, Ahn'Qiraj
+                            name = "Ahn'Qiraj",
+                            id = 81,
+                            icon = 236829,
+                        },
                     },
                     rares = {
-                        [45412] = {name="Lord Aurius Rivendare",locations={[22]={43501930}},loot={{13335,mount=69}}},
+                        [45412] = {name="Lord Aurius Rivendare",locations={[22]={43501930}},loot={{13335,mount=69}},dungeon=true},
+                        [999999] = {name="Any Trash Mob",locations={[81]={24308720}},loot={{21218,mount=117},{21323,mount=120},{21324,mount=119},{21321,mount=118}},raid=true},
                     },
                 },
             },

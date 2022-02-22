@@ -2,12 +2,13 @@ local ADDON_NAME, ns = ...
 local L = ns.L
 
 function ravenous_OnLoad(self)
+    self:RegisterEvent("CHAT_MSG_ADDON")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("CHAT_MSG_CURRENCY")
     self:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-    self:RegisterEvent("CHAT_MSG_ADDON")
     self:RegisterEvent("UPDATE_FACTION")
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    self:RegisterEvent("UPDATE_ALL_UI_WIDGETS")
     self:RegisterEvent("MOUNT_JOURNAL_SEARCH_UPDATED")
     self:RegisterEvent("PET_JOURNAL_LIST_UPDATE")
     self:RegisterEvent("NEW_TOY_ADDED")
@@ -91,6 +92,10 @@ function ravenous_OnEvent(self, event, arg, ...)
         end
         RAVENOUS_version = ns.version
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+    elseif event == "CHAT_MSG_CURRENCY" or event == "CURRENCY_DISPLAY_UPDATE" then
+        if ns.Currencies then
+            ns:RefreshCurrencies()
+        end
     elseif event == "UPDATE_FACTION" then
         if ns.Factions then
             ns:RefreshFactions()
@@ -101,6 +106,10 @@ function ravenous_OnEvent(self, event, arg, ...)
             if ns.Rares then
                 ns:RefreshRares()
             end
+        end
+    elseif event == "UPDATE_ALL_UI_WIDGETS" then
+        if ns.Rares then
+            ns:RefreshRares()
         end
     elseif event == "MOUNT_JOURNAL_SEARCH_UPDATED" or event == "PET_JOURNAL_LIST_UPDATE" or event == "NEW_TOY_ADDED" then
         if ns.Items then
